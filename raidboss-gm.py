@@ -45,7 +45,7 @@ def main():
         'X-Access-Token': accessToken
     }
     url_default= 'https://api.groupme.com/v3/bots/post?bot_id='+bot_id+'&text=' #Add your text here
-    
+
     #r = requests.post(url ,headers=headers)
     #This is to call main script that brings all data into a JSON file https://groupme.com/join_group/8624579/NeuHP2
     #os.remove("transcript-8636748.json")
@@ -62,19 +62,20 @@ def main():
         os.system(cmd)
         last_id = 1
 
-    print 'variable update loop'
+    print 'variable update starts'
     #Opening same JSON file
     transcriptFile = open(json_file)
     transcript = json.load(transcriptFile)
     transcriptFile.close()
-    
+
     # Create a client class which will make HTTP requests with Google Docs server.
     client = gdata.spreadsheet.service.SpreadsheetsService()
     # Authenticate using your Google Docs email address and password.
     email='gameroy007@gmail.com'
     passwrd = 'li@gm1981;'
+    last_id_file='last_id'+group
 
-    # All spreadsheets have worksheets. I think worksheet #1 by default always has a value of 'od6'
+   # All spreadsheets have worksheets. I think worksheet #1 by default always has a value of 'od6'
     worksheet_id = 'od6'
     client = gdata.spreadsheet.service.SpreadsheetsService()
     client.email = email
@@ -90,14 +91,15 @@ def main():
       if last_id != message[u'id']:
         name = message[u'name']
         id = message[u'user_id']
-        txt = message[u'text'].encode('utf-8')
+        txt = message[u'text'].encode('utf-8','ignore')
         timepart= datetime.datetime.fromtimestamp(message[u'created_at']).strftime('%Y-%m-%d %H:%M')
-        txt2 = txt[0:4]   
+        # Here loop. Command : HERE Codes 
+        txt2 = txt[0:4]
         if txt2.upper() =='HERE' or txt2.upper() =='AWAY':
-            print (txt)
+            #print (txt)
             dict = {}
             dict['timestamp'] = timepart
-            dict['jumpercodeandlvl'] = txt
+            dict['jumpercodeandlvl'] = txt[4:]
             dict['groupmename'] = name
             dict['id'] = id
             dict['others'] = txt2.upper()
@@ -105,38 +107,41 @@ def main():
             try :  # This block will try to find entry in sreadsheet. If find one it will update it else insert a new entry
                 cell = worksheet.find(id)
                 if cell.row >0:
-                  worksheet.update_cell(cell.row, 2, txt)
+                  #worksheet.update_cell(cell.row, 2, txt)
+                  worksheet.update_cell(cell.row, 3, name)
                   worksheet.update_cell(cell.row, 1, timepart)
                   worksheet.update_cell(cell.row, 5, txt2.upper())
                   status = "Status of "+name+ " updated to "+txt2   # This is to show status change or current status
-                  url=url_default+status   
+                  url=url_default+status
                   r = requests.post(url ,headers=headers)
                   print 'inside update loop'
 
             except :
                 entry = client.InsertRow(dict,spreadsheet_key,worksheet_id)
-                status = "Status of "+name+ " entered as "+txt2  # This is to show new guy entered in room
-                url=url_default+status 
+                status = "Status and code of "+name+ " entered as "+txt2  # This is to show new guy entered in room
+                url=url_default+status
                 r = requests.post(url ,headers=headers)
                 print 'inside insert loop'
+
+        # Available loop. Command : AVAILABLE
         txt3 = txt[0:9]
-        stringlist="List of Available Jumpers "+'\n'
-        if txt3.upper() =='AVAILABLE': 
+        stringlist="List of Available Jumpers and Codes  "+'\n'
+        if txt3.upper() =='AVAILABLE':
            try :
                cell_list = worksheet.findall('HERE')
                cell_list=sorted(cell_list,reverse=True)
                for  cell in cell_list:
-                    val = worksheet.cell(cell.row,3).value
+                    val = worksheet.cell(cell.row,3).value + worksheet.cell(cell.row,2).value[4:]
                     stringlist=stringlist+val +'\n'
-               print 'inside available loop' 
-               print len(stringlist)     
+               print 'inside available loop'
+               #print len(stringlist)
 
                # This is to handle GM message more than 450 character. Need better way to do this
                str1=stringlist[0:440]
                str2=stringlist[441:880]
                str3=stringlist[881:1320]
                str4=stringlist[1321:1761]
-               str5=stringlist[1762:2201]  
+               str5=stringlist[1762:2201]
                """print 'str1'+ str1
                print 'str2'+ str2
                print 'str3'+ str3
@@ -160,22 +165,43 @@ def main():
                 # This is to handle GM message more than 450 character complete
 
            except :
-               url=url_default + "No One is Available"    
+               url=url_default + "No One is Available"
                r = requests.post(url ,headers=headers)
-               
+
+        #This is to handle if jumper ADD mafia code to existing code. Command : ADDCODE
+        tmptxt = txt[0:7]
+        if tmptxt.upper()=='ADDCODE':
+                cell = worksheet.find(id)
+                tmptxt2 = cell.value + txt[7:]
+                worksheet.update_cell(cell.row, 2, tmptxt2)
+                msg = 'Mafia Code '+ txt[7:] + ' is added to ' + name + ' in database'
+                url=url_default + msg
+                r = requests.post(url ,headers=headers)
+
+        #This is to handle if jumper MODIFY mafia code to existing code. Command : MODIFYCODE
+        tmptxt = txt[0:10]
+        if tmptxt.upper()=='MODIFYCODE':
+                cell = worksheet.find(id)
+                tmptxt2 = txt[10:]
+                worksheet.update_cell(cell.row, 2, tmptxt2)
+                msg = 'Mafia Code for '+name+ ' overwrote to '+ txt[10:] 
+                url=url_default + msg
+                r = requests.post(url ,headers=headers)
+
         #This is help sectoin
         txt3 = txt[0:4]
         if txt3.upper()=='HELP':
-            message='This facility tracks jumpers and their status.'+'\n'+'Mandatory - Add mafia code of jumper(s) to GM name.'+'\n'+ 'Type "here" to announce you are available to jump.'+'\n'+ 'Type "away" to announce you will be unavailable to jump'+'\n'+ 'Type "available" to see how many jumpers are available to jump.'+'\n'+'Type "help" for this help. For real help PM K007.'
+            message='This facility tracks jumpers and their status.'+'\n'+'Mandatory - Add mafia code of jumper(s) to GM name.'+'\n'+ 'Type "here <mafia codes>" to announce you are available to jump.'+'\n'+ 'Type "away" to announce you will be unavailable to jump'+'\n'+ 'Type "available" to see how many jumpers are available to jump.'+'\n'+'Type "help" for this help. For real help PM K007.'
             url=url_default + message
-            r = requests.post(url ,headers=headers)   
+            r = requests.post(url ,headers=headers)
+            
     #Keeping last id into a file
     transcript = sorted(transcript, key=lambda k: k[u'created_at'])
     last_id = transcript[-1][u'id']
     file = open(last_id_file,"w")
     file.write(last_id)
     file.close()
-    
+
     #Keeping a backup of whole processed file
     json_file_bkp=json_file+'-backup'
     transcriptFile = open(json_file_bkp, 'w')
@@ -199,3 +225,6 @@ def main():
 if __name__ == '__main__':
     main()
     sys.exit(0)
+                                                   
+
+
