@@ -99,7 +99,7 @@ def main():
             #print (txt)
             dict = {}
             dict['timestamp'] = timepart
-            dict['jumpercodeandlvl'] = txt[4:]
+            dict['jumpercodeandlvl'] = txt[5:]
             dict['groupmename'] = name
             dict['id'] = id
             dict['others'] = txt2.upper()
@@ -131,7 +131,7 @@ def main():
                cell_list = worksheet.findall('HERE')
                cell_list=sorted(cell_list,reverse=True)
                for  cell in cell_list:
-                    val = worksheet.cell(cell.row,3).value + worksheet.cell(cell.row,2).value[4:]
+                    val = worksheet.cell(cell.row,3).value + worksheet.cell(cell.row,2).value
                     stringlist=stringlist+val +'\n'
                print 'inside available loop'
                #print len(stringlist)
@@ -172,7 +172,7 @@ def main():
         tmptxt = txt[0:7]
         if tmptxt.upper()=='ADDCODE':
                 cell = worksheet.find(id)
-                tmptxt2 = cell.value + txt[7:]
+                tmptxt2 = worksheet.cell(cell.row,2).value + ', '+ txt[7:]
                 worksheet.update_cell(cell.row, 2, tmptxt2)
                 msg = 'Mafia Code '+ txt[7:] + ' is added to ' + name + ' in database'
                 url=url_default + msg
@@ -191,7 +191,7 @@ def main():
         #This is help sectoin
         txt3 = txt[0:4]
         if txt3.upper()=='HELP':
-            message='This facility tracks jumpers and their status.'+'\n'+'Mandatory - Add mafia code of jumper(s) to GM name.'+'\n'+ 'Type "here <mafia codes>" to announce you are available to jump.'+'\n'+ 'Type "away" to announce you will be unavailable to jump'+'\n'+ 'Type "available" to see how many jumpers are available to jump.'+'\n'+'Type "help" for this help. For real help PM K007.'
+            message='This facility tracks jumpers and their status.'+'\n'+'Mandatory - Add mafia code of jumper(s) to GM name. Type -'+'\n'+ '"here <mafia codes>" - announce you are available to jump.'+'\n'+ '"away" - announce you are not available'+'\n'+ '"available" to see how many jumpers are available to jump.'+'\n'+ '"addcode <codes>" to add more code to yourself.' +'\n'+ '"modifycode <codes>" to overwrite all your codes.' +'\n'+ '"modifycode  " to Delete your entry' +'\n'+ '"help" for this help. For real help PM Room Mods.'
             url=url_default + message
             r = requests.post(url ,headers=headers)
             
